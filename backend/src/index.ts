@@ -9,8 +9,6 @@ import { healthRouter } from './routes/health.js';
 import { authRouter } from './routes/auth.js';
 import { usersRouter } from './routes/users.js';
 import { documentsRouter } from './routes/documents.js';
-import { searchRouter } from './routes/search.js';
-import { categoriesRouter } from './routes/categories.js';
 import { initDb } from './db/client.js';
 import { ensureBucket } from './storage/s3.js';
 
@@ -39,8 +37,6 @@ app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/documents', documentsRouter);
-app.use('/api/search', searchRouter);
-app.use('/api/categories', categoriesRouter);
 
 const port = Number(process.env.PORT ?? 8080);
 

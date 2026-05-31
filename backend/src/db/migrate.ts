@@ -19,8 +19,7 @@ async function migrate() {
 
     create table if not exists document_categories (
       id uuid primary key default gen_random_uuid(),
-      name text unique not null,
-      description text
+      name text unique not null
     );
 
     create table if not exists documents (
@@ -89,55 +88,6 @@ async function migrate() {
       meta jsonb,
       created_at timestamptz not null default now()
     );
-
-    -- Recherche intelligente (class diagram)
-    create table if not exists recherches (
-      id uuid primary key default gen_random_uuid(),
-      user_id uuid not null references users(id) on delete cascade,
-      mot_cle text not null,
-      date_recherche timestamptz not null default now()
-    );
-
-    create index if not exists idx_recherches_user on recherches(user_id);
-
-    -- Historique des recherches
-    create table if not exists historique_recherche (
-      id uuid primary key default gen_random_uuid(),
-      user_id uuid not null references users(id) on delete cascade,
-      mot_cle text not null,
-      date_recherche timestamptz not null default now()
-    );
-
-    create index if not exists idx_historique_user on historique_recherche(user_id);
-
-    -- Index IA pour les documents (mots-clés extraits par l'IA)
-    create table if not exists index_ia (
-      id uuid primary key default gen_random_uuid(),
-      document_id uuid not null references documents(id) on delete cascade,
-      mots_cles text[] not null default '{}',
-      score_pertinence real not null default 0.0,
-      created_at timestamptz not null default now()
-    );
-
-    create unique index if not exists idx_index_ia_document on index_ia(document_id);
-
-    -- Mots-clés de recherche associés aux résultats
-    create table if not exists recherche_mot_cle (
-      id uuid primary key default gen_random_uuid(),
-      recherche_id uuid not null references recherches(id) on delete cascade,
-      relevance_score real not null default 0.0
-    );
-
-    -- Résultats de recherche
-    create table if not exists resultat_recherche (
-      id uuid primary key default gen_random_uuid(),
-      recherche_id uuid not null references recherches(id) on delete cascade,
-      document_id uuid not null references documents(id) on delete cascade,
-      score_pertinence real not null default 0.0,
-      created_at timestamptz not null default now()
-    );
-
-    create index if not exists idx_resultat_recherche on resultat_recherche(recherche_id);
   `);
 
   await db.end();

@@ -20,17 +20,7 @@ type Doc = {
 
 type Category = { id: string; name: string; description?: string | null };
 
-function bytesToSize(bytes?: number | null) {
-  const b = bytes ?? 0;
-  if (b < 1024) return `${b} B`;
-  const kb = b / 1024;
-  if (kb < 1024) return `${kb.toFixed(1)} KB`;
-  const mb = kb / 1024;
-  if (mb < 1024) return `${mb.toFixed(2)} MB`;
-  return `${(mb / 1024).toFixed(2)} GB`;
-}
-
-// Modal de confirmation de suppression
+// Modal de confirmation de suppression (sequence diagram: Supprimer)
 function ConfirmDeleteModal({ onConfirm, onCancel }: { onConfirm: () => void; onCancel: () => void }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}>
@@ -46,7 +36,7 @@ function ConfirmDeleteModal({ onConfirm, onCancel }: { onConfirm: () => void; on
   );
 }
 
-// Modal d'édition du document
+// Modal d'édition (sequence diagram: Modifier)
 function EditModal({ doc, categories, onSave, onCancel }: {
   doc: Doc;
   categories: Category[];
@@ -184,10 +174,8 @@ export default function DocumentsPage() {
 
   async function confirmDelete() {
     if (!deleteTarget) return;
-    // Envoyer demande de suppression (ID_Document)
     await api.delete(`/documents/${deleteTarget}`);
     setDeleteTarget(null);
-    // Actualiser et afficher la liste Document
     await qc.invalidateQueries({ queryKey: ['docs'] });
     if (useSmartSearch && smartResults) {
       setSmartResults(smartResults.filter((d) => d.id !== deleteTarget));
@@ -195,27 +183,18 @@ export default function DocumentsPage() {
   }
 
   async function saveEdit(id: string, data: any) {
-    // Envoyer nouvelles données — Enregistrer les Modifications
     await api.put(`/documents/${id}`, data);
     setEditTarget(null);
-    // Actualiser et afficher la liste Document
     await qc.invalidateQueries({ queryKey: ['docs'] });
-    if (useSmartSearch && smartResults) {
-      setSmartResults(await (async () => {
-        const r = await api.get('/documents');
-        return r.data.documents;
-      })());
-    }
   }
 
   async function summarize(id: string) {
     setSummarizingId(id);
     try {
-      // Demander résumer — génère et enregistre le résumé
       await api.post(`/documents/${id}/summarize`);
       await qc.invalidateQueries({ queryKey: ['docs'] });
     } catch {
-      // silent — summary may already exist
+      // silent
     } finally {
       setSummarizingId(null);
     }
@@ -226,7 +205,6 @@ export default function DocumentsPage() {
     setSearching(true);
     setSmartMeta(null);
     try {
-      // Envoyer la requête — analyse intelligente
       const r = await api.post('/search', { q: q.trim() });
       setSmartResults(r.data.documents);
       setSmartMeta({ keywords: r.data.keywords, intention: r.data.intention, message: r.data.message });
@@ -247,22 +225,14 @@ export default function DocumentsPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {deleteTarget && (
-        <ConfirmDeleteModal
-          onConfirm={confirmDelete}
-          onCancel={() => setDeleteTarget(null)}
-        />
+        <ConfirmDeleteModal onConfirm={confirmDelete} onCancel={() => setDeleteTarget(null)} />
       )}
       {editTarget && (
-        <EditModal
-          doc={editTarget}
-          categories={categories}
-          onSave={saveEdit}
-          onCancel={() => setEditTarget(null)}
-        />
+        <EditModal doc={editTarget} categories={categories} onSave={saveEdit} onCancel={() => setEditTarget(null)} />
       )}
 
       <div className="grid">
-        {/* Upload */}
+        {/* Upload — sequence diagram: Ajouter document */}
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Ajouter un document</h3>
           <div className="muted small">Formats: PDF, DOCX, TXT. Vérification doublon + OCR + résumé + classification.</div>
@@ -289,28 +259,27 @@ export default function DocumentsPage() {
           </form>
         </div>
 
-        {/* Recherche */}
+        {/* Recherche — sequence diagram: Recherche intelligente */}
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Recherche</h3>
           <div className="muted small">Recherche full-text ou intelligente avec classement par pertinence.</div>
           <div className="spacer" />
-          <div className="row">
-            <input className="input" placeholder="Saisir requête de recherche…" value={q} onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') useSmartSearch ? runSmartSearch() : qc.invalidateQueries({ queryKey: ['docs'] }); }} />
-          </div>
+          <input
+            className="input"
+            placeholder="Saisir requête de recherche…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && useSmartSearch) runSmartSearch(); }}
+          />
           <div className="spacer" />
-          <div className="row">
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-              <input type="checkbox" checked={useSmartSearch} onChange={(e) => { setUseSmartSearch(e.target.checked); setSmartResults(null); setSmartMeta(null); }} />
-              Recherche intelligente (IA)
-            </label>
-          </div>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+            <input type="checkbox" checked={useSmartSearch} onChange={(e) => { setUseSmartSearch(e.target.checked); setSmartResults(null); setSmartMeta(null); }} />
+            Recherche intelligente (IA) — analyse mots-clés + intention
+          </label>
           <div className="spacer" />
           {!useSmartSearch && (
             <>
-              <div className="row">
-                <input className="input" placeholder="Filtrer par tag (exact)" value={tag} onChange={(e) => setTag(e.target.value)} />
-              </div>
+              <input className="input" placeholder="Filtrer par tag (exact)" value={tag} onChange={(e) => setTag(e.target.value)} />
               <div className="spacer" />
               <select className="input" value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)}>
                 <option value="">— Toutes catégories —</option>
@@ -320,15 +289,17 @@ export default function DocumentsPage() {
             </>
           )}
           {useSmartSearch && (
-            <button className="btn primary" style={{ width: '100%' }} onClick={runSmartSearch} disabled={searching || !q.trim()}>
-              {searching ? 'Analyse en cours…' : 'Lancer la recherche intelligente'}
-            </button>
+            <>
+              <button className="btn primary" style={{ width: '100%' }} onClick={runSmartSearch} disabled={searching || !q.trim()}>
+                {searching ? 'Analyse en cours…' : 'Lancer la recherche intelligente'}
+              </button>
+              <div className="spacer" />
+            </>
           )}
-          <div className="spacer" />
           {smartMeta && (
             <div style={{ fontSize: 12, marginBottom: 8 }}>
-              {smartMeta.keywords?.length ? <div className="muted">Mots-clés: {smartMeta.keywords.join(', ')}</div> : null}
-              {smartMeta.intention ? <div className="badge ok" style={{ marginTop: 4 }}>Intention: {smartMeta.intention}</div> : null}
+              {smartMeta.keywords?.length ? <div className="muted">Mots-clés extraits: {smartMeta.keywords.join(', ')}</div> : null}
+              {smartMeta.intention ? <div className="badge ok" style={{ marginTop: 4 }}>Intention détectée: {smartMeta.intention}</div> : null}
               {smartMeta.message ? <div className="badge warn" style={{ marginTop: 4 }}>{smartMeta.message}</div> : null}
             </div>
           )}
@@ -346,12 +317,12 @@ export default function DocumentsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th style={{ width: '38%' }}>Document</th>
+              <th style={{ width: '36%' }}>Document</th>
               <th style={{ width: '12%' }}>Catégorie</th>
               <th style={{ width: '16%' }}>IA</th>
               <th style={{ width: '10%' }}>Status</th>
               <th style={{ width: '12%' }}>Créé</th>
-              <th style={{ width: '12%' }}></th>
+              <th style={{ width: '14%' }}></th>
             </tr>
           </thead>
           <tbody>
