@@ -35,7 +35,7 @@ services:
       PORT: 8080
       DATABASE_URL: postgresql://dms:dms@db:5432/dms
       JWT_SECRET: change_me_in_prod
-      AI_SERVICE_URL: http://ai:5000
+      AI_SERVICE_URL: http://pfe-ai:5000
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
       S3_ACCESS_KEY_ID: minio
@@ -47,12 +47,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      ai:
+      pfe-ai:
         condition: service_started
       minio:
         condition: service_started
 
-  ai:
+  pfe-ai:
     build:
       context: ./ai-service
     environment:
