@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import CategoriesPage from './pages/CategoriesPage';
+import EmployeesPage from './pages/EmployeesPage';
 
 function useStoredToken() {
   const [token, setToken] = React.useState<string | null>(() => localStorage.getItem('token'));
@@ -39,6 +40,9 @@ function Sidebar({ token, onLogout }: { token: string | null; onLogout: () => vo
         </NavLink>
         <NavLink className={({ isActive }) => `navItem ${isActive ? 'active' : ''}`} to="/categories">
           Catégories
+        </NavLink>
+        <NavLink className={({ isActive }) => `navItem ${isActive ? 'active' : ''}`} to="/employees">
+          Employés
         </NavLink>
       </div>
 
@@ -109,6 +113,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/employees" element={<EmployeesPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
