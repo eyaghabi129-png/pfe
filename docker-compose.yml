@@ -65,7 +65,7 @@ services:
     build:
       context: ./frontend
     environment:
-      VITE_API_BASE_URL: http://localhost:7503
+      VITE_API_BASE_URL: http://72.146.192.161:7503
     ports:
       - "7505:5173"
     depends_on:
